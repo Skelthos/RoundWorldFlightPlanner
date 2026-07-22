@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="RoundWorldFlightPlanner.Core/RoundWorldFlightPlanner.Core.csproj" />
+  <Project Path="RoundWorldFlightPlanner.Data/RoundWorldFlightPlanner.Data.csproj" />
+  <Project Path="RoundWorldFlightPlanner.Services/RoundWorldFlightPlanner.Services.csproj" />
+  <Project Path="RoundWorldFlightPlanner.UI/RoundWorldFlightPlanner.UI.csproj" />
+</Solution>

@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RoundWorldFlightPlanner.Core\RoundWorldFlightPlanner.Core.csproj" />
+    <ProjectReference Include="..\RoundWorldFlightPlanner.Data\RoundWorldFlightPlanner.Data.csproj" />
+    <ProjectReference Include="..\RoundWorldFlightPlanner.Services\RoundWorldFlightPlanner.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SimConnect.NET" Version="0.2.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

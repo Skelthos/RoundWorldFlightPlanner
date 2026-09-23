@@ -33,6 +33,7 @@ public class MainForm : Form
     private readonly CountryProgressService _countryProgressService = new();
     private readonly RouteAutoFillService _routeAutoFillService;
     private readonly LegSplittingService _legSplittingService;
+    private readonly RouteUncrossingService _routeUncrossingService;
     private readonly AirportLookupService _airportLookupService;
     private readonly SimConnectTrackingService _simConnectService = new();
     private readonly System.Windows.Forms.Timer _simConnectTimer = new() { Interval = 3000 };
@@ -67,6 +68,7 @@ public class MainForm : Form
         _shoppingEventService = new WifeShoppingEventService(_populationLookupService);
         _routeAutoFillService = new RouteAutoFillService(_distanceService);
         _legSplittingService = new LegSplittingService(_distanceService);
+        _routeUncrossingService = new RouteUncrossingService(_distanceService);
         _airportLookupService = new AirportLookupService(_distanceService);
 
         Text = "Round-the-World Flight Planner";
@@ -187,9 +189,7 @@ public class MainForm : Form
 
         var beforeCount = _itinerary.Legs.Count;
         var allAirports = _context.Airports.ToList();
-        _routeAutoFillService.ResetToSpine(_itinerary);
-        _routeAutoFillService.FillToCountryGoal(_itinerary, allAirports);
-        _legSplittingService.SplitOverlongLegs(_itinerary, allAirports);
+        RegenerateRoute(_itinerary, allAirports, resetToSpineFirst: true);
         _context.SaveChanges();
         var afterCount = _itinerary.Legs.Count;
 
@@ -231,11 +231,36 @@ public class MainForm : Form
             .First(i => i.Id == itinerary.Id);
 
         var allAirports = _context.Airports.ToList();
-        _routeAutoFillService.FillToCountryGoal(itinerary, allAirports);
-        _legSplittingService.SplitOverlongLegs(itinerary, allAirports);
+        RegenerateRoute(itinerary, allAirports, resetToSpineFirst: false);
         _context.SaveChanges();
 
         return itinerary;
+    }
+
+    /// <summary>
+    /// The one place the auto-generated part of a route gets (re)built: country-fill, then splitting of
+    /// overlong legs, then a global pass that removes any legs left crossing each other on the map.
+    /// The uncrossing pass can take a few seconds on a full round-the-world route, hence the wait cursor.
+    /// </summary>
+    private void RegenerateRoute(Itinerary itinerary, IReadOnlyList<Airport> allAirports, bool resetToSpineFirst)
+    {
+        var previousCursor = Cursor;
+        Cursor = Cursors.WaitCursor;
+        try
+        {
+            if (resetToSpineFirst)
+            {
+                _routeAutoFillService.ResetToSpine(itinerary);
+            }
+
+            _routeAutoFillService.FillToCountryGoal(itinerary, allAirports);
+            _legSplittingService.SplitOverlongLegs(itinerary, allAirports);
+            _routeUncrossingService.RemoveCrossings(itinerary, allAirports);
+        }
+        finally
+        {
+            Cursor = previousCursor;
+        }
     }
 
     private void RefreshUi()
@@ -689,9 +714,7 @@ public class MainForm : Form
         if (diverted)
         {
             var allAirports = _context.Airports.ToList();
-            _routeAutoFillService.ResetToSpine(_itinerary);
-            _routeAutoFillService.FillToCountryGoal(_itinerary, allAirports);
-            _legSplittingService.SplitOverlongLegs(_itinerary, allAirports);
+            RegenerateRoute(_itinerary, allAirports, resetToSpineFirst: true);
             _context.SaveChanges();
         }
 

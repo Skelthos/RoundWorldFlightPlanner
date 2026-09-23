@@ -39,7 +39,7 @@ public class RouteAutoFillService(IRouteDistanceService distanceService)
     {
         var orderedLegs = itinerary.Legs.OrderBy(l => l.SequenceNumber).ToList();
 
-        var toRemove = orderedLegs.Where(l => !l.IsComplete && !l.IsSpineAnchor).ToList();
+        var toRemove = orderedLegs.Where(l => !l.IsComplete && !l.IsSpineAnchor && l.Phase == Core.Enums.FlightPhase.NotStarted).ToList();
         foreach (var leg in toRemove)
         {
             itinerary.Legs.Remove(leg);
@@ -50,7 +50,7 @@ public class RouteAutoFillService(IRouteDistanceService distanceService)
         {
             var previousArrival = orderedLegs[i - 1].ArrivalAirport!;
             var leg = orderedLegs[i];
-            if (leg.IsComplete || leg.DepartureAirportId == previousArrival.Id)
+            if (leg.IsComplete || leg.Phase != Core.Enums.FlightPhase.NotStarted || leg.DepartureAirportId == previousArrival.Id)
             {
                 continue;
             }
@@ -131,7 +131,7 @@ public class RouteAutoFillService(IRouteDistanceService distanceService)
             // and can't use a large "fair share" anyway - confirmed as a real regression (Europe/North
             // America both dropped below goal) before this two-level split was added.
             var visits = GroupAnchorsByVisit(anchorCandidates, continent)
-                .Select(visit => visit.Where(a => orderedLegs.FirstOrDefault(l => l.SequenceNumber == a.SequenceNumber + 1) is not { IsComplete: true }).ToList())
+                .Select(visit => visit.Where(a => orderedLegs.FirstOrDefault(l => l.SequenceNumber == a.SequenceNumber + 1) is not { Phase: not Core.Enums.FlightPhase.NotStarted }).ToList())
                 .Where(visit => visit.Count > 0)
                 .ToList();
             if (visits.Count == 0)

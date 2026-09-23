@@ -59,9 +59,9 @@ public class LegSplittingService(IRouteDistanceService distanceService)
 
         foreach (var leg in orderedLegs.ToList())
         {
-            if (leg.IsComplete)
+            if (leg.IsComplete || leg.Phase != Core.Enums.FlightPhase.NotStarted)
             {
-                continue; // never rewrite a leg that's already been flown
+                continue; // never rewrite a leg that has been flown or is in progress
             }
 
             if (leg.PlannedDistanceNm <= strictCapNm)

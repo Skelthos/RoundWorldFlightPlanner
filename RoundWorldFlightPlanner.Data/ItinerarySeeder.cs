@@ -23,15 +23,15 @@ public static class ItinerarySeeder
         "PAFA", // Yukon Valley (Alaska)
         "RJTT", // Tokyo - down through eastern Asia
         "VHHH", // Hong Kong
-        "WSSS", // Singapore - bridge into Oceania
-        "YPDN", // Darwin - into Australia
-        "YBCS", // Emerald Coast (Cairns)
-        "YSSY", // Sydney - Australia circumnavigation
+        "NFFN", // Nadi, Fiji - down the eastern side of Oceania (Pacific islands fill in along the way)
+        "NZRO", // Te Awaroa National Park (New Zealand)
+        "YBCS", // Emerald Coast (Cairns) - then round Australia counter-clockwise, ending in the west
+        "YSSY", // Sydney
         "YMML", // Melbourne
         "YPAD", // Adelaide
         "YPPH", // Perth
-        "NZRO", // Te Awaroa National Park (New Zealand)
-        "NFFN", // Nadi, Fiji - back up through Oceania
+        "YPDN", // Darwin - up the western/northern side toward Asia
+        "WSSS", // Singapore - back into Asia, heading west
         "VABB", // Mumbai - India
         "VNKT", // Sundarpatan (Nepal)
         "OMDB", // Dubai - Middle East
@@ -50,18 +50,18 @@ public static class ItinerarySeeder
         "CYYT", // St. John's - down the eastern seaboard
         "KLEB", // New England Mountains
         "TJSJ", // San Juan - Caribbean
-        "SKBO", // Bogota - into South America
+        "SAEZ", // Buenos Aires - down the east side of South America
+        "SCEL", // Santiago - up the west side, toward the Antarctica gateway leg
         "SPZO", // Parque Fernando / Peru Reserve (Cusco)
-        "SCEL", // Santiago - toward the Antarctica gateway
-        "SAEZ", // Buenos Aires - back up through South America
+        "SKBO", // Bogota - out through the north of South America
         "MPTO", // Panama - Central America
         "MMCU", // Rancho del Arroyo (Chihuahua)
         "KJAN", // Mississippi Acres Preserve
         AirportSeedImporter.HomeIcao, // KVGT - return
     ];
 
-    /// <summary>Inserted right after "SCEL" for the Chile Peninsula gateway - a short Drake Passage hop, not a trek to the Ross Sea side.</summary>
-    private static readonly string[] ChilePeninsulaSegment = ["SCGZ", "SCRM"];
+    /// <summary>Inserted right after "SAEZ" for the Chile Peninsula gateway (Buenos Aires -> King George Island -> Puerto Williams -> Santiago) - a short Drake Passage hop, not a trek to the Ross Sea side.</summary>
+    private static readonly string[] ChilePeninsulaSegment = ["SCRM", "SCGZ"];
 
     /// <summary>Inserted right after "NZRO" for the New Zealand/McMurdo gateway - Christchurch is the real-world McMurdo gateway.</summary>
     private static readonly string[] NewZealandMcMurdoSegment = ["NZCH", "NZWD"];
@@ -72,7 +72,7 @@ public static class ItinerarySeeder
         var (afterIcao, segment) = gateway switch
         {
             AntarcticaGateway.NewZealandMcMurdo => ("NZRO", NewZealandMcMurdoSegment),
-            _ => ("SCEL", ChilePeninsulaSegment),
+            _ => ("SAEZ", ChilePeninsulaSegment),
         };
 
         var insertAt = order.IndexOf(afterIcao) + 1;

@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="SimConnect.NET" Version="0.2.1" />
+    <!-- Natural Earth 110m land polygons (public domain) - the continent outlines drawn under the route. -->
+    <EmbeddedResource Include="Resources/land.geojson" />
   </ItemGroup>
 
   <PropertyGroup>

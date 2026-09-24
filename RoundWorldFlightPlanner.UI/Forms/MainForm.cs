@@ -79,12 +79,27 @@ public class MainForm : Form
         LoadOrSeedItinerary();
         RefreshUi();
 
-        _simConnectService.Connected += (_, _) => _simConnectLabel.Text = "Simulator: Connected";
-        _simConnectService.Disconnected += (_, _) => _simConnectLabel.Text = "Simulator: Not connected";
+        // SimConnect raises these from its own thread, and possibly after the window is already gone.
+        _simConnectService.Connected += (_, _) => SetSimulatorStatus("Simulator: Connected");
+        _simConnectService.Disconnected += (_, _) => SetSimulatorStatus("Simulator: Not connected");
         _simConnectTimer.Tick += OnSimConnectTimerTick;
         _simConnectTimer.Start();
-        _weatherTimer.Tick += async (_, _) => await RefreshWeatherAsync(force: true);
+        _weatherTimer.Tick += async (_, _) =>
+        {
+            if (!IsDisposed)
+            {
+                await RefreshWeatherAsync(force: true);
+            }
+        };
         _weatherTimer.Start();
+        // Stop both timers as soon as the window starts closing - otherwise a tick that fires during
+        // shutdown touches the disposed form ("Cannot access a disposed object") and the error dialog
+        // keeps the process alive.
+        FormClosing += (_, _) =>
+        {
+            _simConnectTimer.Stop();
+            _weatherTimer.Stop();
+        };
         FormClosed += async (_, _) => await _simConnectService.DisposeAsync();
     }
 
@@ -103,6 +118,26 @@ public class MainForm : Form
         _toolStrip.Items.Add(new ToolStripSeparator());
         _toolStrip.Items.Add(new ToolStripButton("Zoom to Active Leg", null, (_, _) => _mapPanel.ZoomToLeg(GetActiveLeg())));
         _toolStrip.Items.Add(new ToolStripButton("Reset Map View", null, (_, _) => _mapPanel.ResetZoom()));
+        var airportsButton = new ToolStripButton("Airports: Route only");
+        airportsButton.Click += (_, _) =>
+        {
+            _mapPanel.AirportDisplay = _mapPanel.AirportDisplay switch
+            {
+                AirportDisplayMode.RouteOnly => AirportDisplayMode.All,
+                AirportDisplayMode.All => AirportDisplayMode.None,
+                _ => AirportDisplayMode.RouteOnly,
+            };
+            airportsButton.Text = _mapPanel.AirportDisplay switch
+            {
+                AirportDisplayMode.RouteOnly => "Airports: Route only",
+                AirportDisplayMode.All => "Airports: All",
+                _ => "Airports: Hidden",
+            };
+        };
+        _toolStrip.Items.Add(airportsButton);
+        var outlinesButton = new ToolStripButton("Continent outlines") { CheckOnClick = true, Checked = true };
+        outlinesButton.CheckedChanged += (_, _) => _mapPanel.ShowLandOutlines = outlinesButton.Checked;
+        _toolStrip.Items.Add(outlinesButton);
         _toolStrip.Items.Add(new ToolStripButton("Refresh Weather", null, async (_, _) => await RefreshWeatherAsync(force: true)));
 
         var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 720 };
@@ -723,9 +758,32 @@ public class MainForm : Form
         RefreshUi();
     }
 
+    private void SetSimulatorStatus(string text)
+    {
+        if (IsDisposed || !IsHandleCreated)
+        {
+            return;
+        }
+
+        try
+        {
+            BeginInvoke(() =>
+            {
+                if (!IsDisposed)
+                {
+                    _simConnectLabel.Text = text;
+                }
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // window closed between the check and the invoke - nothing left to update
+        }
+    }
+
     private async void OnSimConnectTimerTick(object? sender, EventArgs e)
     {
-        if (_simPollInFlight)
+        if (_simPollInFlight || IsDisposed || Disposing)
         {
             return;
         }
@@ -737,6 +795,11 @@ public class MainForm : Form
             await _simConnectService.PumpMessagesAsync();
 
             var state = await _simConnectService.GetCurrentStateAsync();
+            if (IsDisposed)
+            {
+                return; // the window closed while we were awaiting the sim
+            }
+
             if (state is not null)
             {
                 _telemetryLabel.ForeColor = Color.DimGray;
